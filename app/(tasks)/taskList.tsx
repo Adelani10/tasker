@@ -1,0 +1,91 @@
+import TaskListItem from "@/app/components/taskListItem";
+import { dummyPeriod, dummyTasks } from "@/data";
+import { Task, TaskListScreenProps } from "@/types";
+import { FontAwesome, Ionicons } from "@expo/vector-icons";
+import React, { useState } from "react";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+const TaskList: React.FC<TaskListScreenProps> = ({}) => {
+  const [tasks, setTasks] = useState<Task[]>(dummyTasks);
+  const [filter, setFilter] = useState<string>("Today");
+
+  const activeTasks = tasks.filter((t) => !t.completed);
+  const todayTasks = activeTasks.filter((t) => t.isToday);
+  const upcomingTasks = activeTasks.filter((t) => !t.isToday);
+  const completedTaskMock = tasks.find((t) => t.completed);
+
+  const handleToggle = (id: string) => {
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === id ? { ...task, completed: !task.completed } : task
+      )
+    );
+  };
+
+  return (
+    <SafeAreaView className={`flex-1 bg-background`}>
+      <View className="flex-1 px-6 pt-4">
+        <View className="flex-row justify-between items-center py-4">
+          <Text className={`text-3xl font-extrabold text-textPrimary`}>
+            My Tasks
+          </Text>
+          <TouchableOpacity onPress={() => console.log("Person")}>
+            <Ionicons
+              name="person"
+              size={28}
+              color="#000"
+              style={{ marginRight: 10 }}
+            />
+            {/* <Icon name="person" size="text-3xl text-textPrimary" /> */}
+          </TouchableOpacity>
+        </View>
+
+        <View className="flex-row mb-5">
+          {dummyPeriod?.map((item, i) => (
+            <TouchableOpacity
+              key={i}
+              className={`px-4 py-2 rounded-full mr-3 ${item === filter ? `bg-danger` : `bg-textSecondary`}`}
+              onPress={() => setFilter(item)}
+            >
+              <Text className={`text-sm font-semibold text-white`}>{item}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+          {filter === "Today" &&
+            todayTasks.map((task) => (
+              <TaskListItem key={task.id} task={task} onToggle={handleToggle} />
+            ))}
+          {filter === "Upcoming" &&
+            upcomingTasks.map((task) => (
+              <TaskListItem key={task.id} task={task} onToggle={handleToggle} />
+            ))}
+          {completedTaskMock && (
+            <TaskListItem
+              key={"completed-mock"}
+              task={completedTaskMock}
+              onToggle={handleToggle}
+            />
+          )}
+          <View className="h-20" />
+        </ScrollView>
+      </View>
+
+      <TouchableOpacity
+        className={`absolute w-16 h-16 items-center justify-center right-6 bottom-8 bg-danger rounded-full shadow-xl shadow-[#EF4444]/50`}
+        onPress={() => console.log("Navigate to Add Task")}
+      >
+        <FontAwesome
+          name="plus"
+          size={24}
+          color="#fff"
+          className="text-xl text-surface"
+        />
+      </TouchableOpacity>
+    </SafeAreaView>
+  );
+};
+
+export default TaskList;
