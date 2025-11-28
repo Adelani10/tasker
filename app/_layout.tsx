@@ -3,7 +3,11 @@ import "./global.css";
 
 export default function RootLayout() {
   return (
-    <Stack>
+    <Stack
+      screenOptions={{
+        headerShown: false, 
+      }}
+    >
       <Stack.Screen name="(tasks)" options={{ headerShown: false }} />
     </Stack>
   );

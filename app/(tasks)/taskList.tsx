@@ -10,10 +10,9 @@ const TaskList: React.FC<TaskListScreenProps> = ({}) => {
   const [tasks, setTasks] = useState<Task[]>(dummyTasks);
   const [filter, setFilter] = useState<string>("Today");
 
-  const activeTasks = tasks.filter((t) => !t.completed);
-  const todayTasks = activeTasks.filter((t) => t.isToday);
-  const upcomingTasks = activeTasks.filter((t) => !t.isToday);
-  const completedTaskMock = tasks.find((t) => t.completed);
+  const todayTasks = tasks.filter((t) => t.isToday);
+  const upcomingTasks = tasks.filter((t) => !t.isToday);
+  const completedTasks = tasks.filter((t) => t.completed);
 
   const handleToggle = (id: string) => {
     setTasks((prevTasks) =>
@@ -31,13 +30,7 @@ const TaskList: React.FC<TaskListScreenProps> = ({}) => {
             My Tasks
           </Text>
           <TouchableOpacity onPress={() => console.log("Person")}>
-            <Ionicons
-              name="person"
-              size={28}
-              color="#000"
-              style={{ marginRight: 10 }}
-            />
-            {/* <Icon name="person" size="text-3xl text-textPrimary" /> */}
+            <Ionicons name="person" size={28} color="#1F2937" />
           </TouchableOpacity>
         </View>
 
@@ -62,13 +55,6 @@ const TaskList: React.FC<TaskListScreenProps> = ({}) => {
             upcomingTasks.map((task) => (
               <TaskListItem key={task.id} task={task} onToggle={handleToggle} />
             ))}
-          {completedTaskMock && (
-            <TaskListItem
-              key={"completed-mock"}
-              task={completedTaskMock}
-              onToggle={handleToggle}
-            />
-          )}
           <View className="h-20" />
         </ScrollView>
       </View>
