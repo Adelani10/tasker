@@ -1,12 +1,36 @@
 import { create } from "zustand";
 import { getCurrentUser } from "./appwrite";
-// import { useAppwrite } from './useAppwrite';
 
-interface User {
+interface Target {
+  $createdAt: string;
   $id: string;
+  $updatedAt: string;
+  expired: boolean;
+  identifier: string;
   name: string;
+  providerId: string | null;
+  providerType: 'email' | 'phone' | 'oauth';
+  userId: string;
+}
+
+export interface User {
+  $createdAt: string;
+  $id: string;
+  $updatedAt: string;
+  accessedAt: string;
+  avatar: string | ArrayBuffer;
   email: string;
-  avatar: string;
+  emailVerification: boolean;
+  labels: string[];
+  mfa: boolean;
+  name: string;
+  passwordUpdate: string;
+  phone: string;
+  phoneVerification: boolean;
+  prefs: Record<string, any>; 
+  registration: string;
+  status: boolean;
+  targets: Target[];
 }
 
 interface GlobalState {

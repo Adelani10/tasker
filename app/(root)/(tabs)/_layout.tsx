@@ -14,9 +14,9 @@ const TabIcon = ({
   focused: boolean;
 }) => {
   return (
-    <View className="flex-col gap-y-1">
+    <View className="flex-col mt-6 w-12 items-center gap-y-1">
       <Image source={icon} className="h-5 w-5" />
-      {focused && <Text className="text-textSecondary">{title}</Text>}
+      {focused && <Text className="text-primary text-xs">{title}</Text>}
     </View>
   );
 };

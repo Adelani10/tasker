@@ -2,17 +2,18 @@ import TaskListItem from "@/components/taskListItem";
 import { dummyPeriod, dummyTasks } from "@/data";
 import { Task, TaskListScreenProps } from "@/types";
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const TaskList: React.FC<TaskListScreenProps> = ({}) => {
+const TaskList: React.FC<TaskListScreenProps> = () => {
   const [tasks, setTasks] = useState<Task[]>(dummyTasks);
   const [filter, setFilter] = useState<string>("Today");
 
   const todayTasks = tasks.filter((t) => t.isToday);
   const upcomingTasks = tasks.filter((t) => !t.isToday);
-  const completedTasks = tasks.filter((t) => t.completed);
+  const router = useRouter();
 
   const handleToggle = (id: string) => {
     setTasks((prevTasks) =>
@@ -29,7 +30,7 @@ const TaskList: React.FC<TaskListScreenProps> = ({}) => {
           <Text className={`text-3xl font-extrabold text-textPrimary`}>
             My Tasks
           </Text>
-          <TouchableOpacity onPress={() => console.log("Person")}>
+          <TouchableOpacity onPress={() => router.push("/profile")}>
             <Ionicons name="person" size={28} color="#1F2937" />
           </TouchableOpacity>
         </View>
@@ -60,8 +61,8 @@ const TaskList: React.FC<TaskListScreenProps> = ({}) => {
       </View>
 
       <TouchableOpacity
-        className={`absolute w-16 h-16 items-center justify-center right-6 bottom-8 bg-danger rounded-full shadow-xl shadow-[#EF4444]/50`}
-        onPress={() => console.log("Navigate to Add Task")}
+        className={`absolute w-16 h-16 items-center justify-center right-6 bottom-32 bg-danger rounded-full shadow-xl shadow-[#EF4444]/50`}
+        onPress={() => router.push("/task/create")}
       >
         <FontAwesome
           name="plus"

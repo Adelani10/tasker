@@ -56,12 +56,13 @@ export const logout = async () => {
 export const getCurrentUser = async () => {
   try {
     const res = await account.get();
-    if (res?.$id) {
-      const userAvatar = avatar.getInitials(res?.name);
-      return { ...res, avatar: userAvatar?.toString() };
+    if (res && typeof res.$id === "string" && res.$id.length > 0) {
+      const userAvatar = await avatar.getInitials(res?.name);
+      return { ...res, avatar: userAvatar };
     }
+    return null;
   } catch (error) {
-    console.error(error);
+    console.log(error);
+    return null;
   }
-  return null;
 };

@@ -31,7 +31,7 @@ const TaskListItem: React.FC<TaskListItemProps> = ({ task, onToggle }) => {
       </View>
 
       <TouchableOpacity
-        onPress={() => router.push(`/details/${task?.id}`)}
+        onPress={() => router.push(`/task/${task.id}`)}
         className="p-1"
       >
         <Ionicons name="menu" size={20} color={"#10B981"} />

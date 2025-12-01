@@ -30,7 +30,9 @@ export default function SignIn() {
             resizeMode="cover"
           />
 
-          <Text className={`text-4xl -mt-32 font-extrabold text-textPrimary mb-2`}>
+          <Text
+            className={`text-4xl -mt-32 font-extrabold text-textPrimary mb-2`}
+          >
             Get Organized
           </Text>
           <Text
