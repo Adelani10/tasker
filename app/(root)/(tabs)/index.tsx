@@ -1,4 +1,4 @@
-import TaskListItem from "@/app/components/taskListItem";
+import TaskListItem from "@/components/taskListItem";
 import { dummyPeriod, dummyTasks } from "@/data";
 import { Task, TaskListScreenProps } from "@/types";
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
