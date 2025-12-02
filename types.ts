@@ -12,8 +12,7 @@ export interface Task {
   note: string;
   title: string;
   userId: string;
-  tags?: TaskTag[];
-  tagId: string[];
+  tagId?: TaskTag[];
 }
 
 export interface CreateTaskData {
@@ -23,7 +22,7 @@ export interface CreateTaskData {
   completed: boolean;
   imageUri?: string | null;
   userId: string;
-  tagId?: string[];
+  taskTagIds?: string[];
 }
 
 export interface WelcomeScreenProps {
@@ -38,7 +37,8 @@ export interface TaskListScreenProps {
 
 export interface TaskListItemProps {
   task: any;
-  onToggle: (taskId: string, isCompleted: boolean) => void;
+  onToggle: (task: Task) => void;
+  onDetail: (taskId: string) => void;
 }
 
 export type TaskTag = {
@@ -57,3 +57,4 @@ export interface EmptyStateProps {
   message?: string;
   imageSource?: any;
 }
+

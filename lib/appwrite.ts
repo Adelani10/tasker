@@ -96,7 +96,7 @@ export const getUserTasks = async ({
     const res = await databases?.listDocuments(
       config?.databaseId!,
       config?.taskId!,
-      [Query.equal("userId", userId)]
+      [Query.equal("userId", userId)],
     );
     return res?.documents;
   } catch (error) {
@@ -104,19 +104,16 @@ export const getUserTasks = async ({
   }
 };
 
-export const getSingleTask = async ({
-  taskId,
-}: {
-  taskId: string | undefined;
-}) => {
+export const getSingleTask = async ({ taskId }: { taskId: string }) => {
   if (!taskId) return [];
   try {
     const res = await databases?.getDocument(
       config?.databaseId!,
       config?.taskId!,
-      taskId
+      taskId,
+      [Query.select(["*"]), Query.select(["tagId.tagName", "tagId.$id", "tagId.description"])]
     );
-    return res?.document;
+    return res;
   } catch (error) {
     console.error(error);
   }
@@ -179,6 +176,41 @@ export const createTask = async (task: CreateTaskData) => {
       config?.taskId!,
       ID.unique(),
       payload
+    );
+
+    return true;
+  } catch (error) {
+    console.error("Error creating task document:", error);
+    return false;
+  }
+};
+
+export const updateTask = async (taskId: string, task: CreateTaskData) => {
+  try {
+    if (!task || !taskId) return false;
+
+    const res = await databases?.updateDocument(
+      config?.databaseId!,
+      config?.taskId!,
+      taskId,
+      task
+    );
+
+    return true;
+  } catch (error) {
+    console.error("Error creating task document:", error);
+    return false;
+  }
+};
+
+export const deleteTask = async (taskId: string) => {
+  try {
+    if (!taskId) return false;
+
+    const res = await databases?.updateDocument(
+      config?.databaseId!,
+      config?.taskId!,
+      taskId
     );
 
     return true;

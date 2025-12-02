@@ -1,14 +1,21 @@
 import empty from "@/assets/images/emptyState.png";
 import EmptyState from "@/components/emptyState";
 import TaskListItem from "@/components/taskListItem";
-import { getUserTasks } from "@/lib/appwrite";
+import { getUserTasks, updateTask } from "@/lib/appwrite";
 import { useGlobalStore } from "@/lib/store";
 import { useAppwrite } from "@/lib/useAppwrite";
-import { TaskListScreenProps } from "@/types";
+import { Task, TaskListScreenProps } from "@/types";
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import React, { useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { router } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const dummyPeriod: string[] = [
@@ -51,26 +58,86 @@ const isUpcoming = (dateStr: string) => {
 
 const TaskList: React.FC<TaskListScreenProps> = () => {
   const [filter, setFilter] = useState<string>("All");
-  const router = useRouter();
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const { user } = useGlobalStore();
 
-  const { data } = useAppwrite({
+  const { data, loading } = useAppwrite({
     fn: getUserTasks,
     params: { userId: user?.$id },
   });
 
-  if (!data) return <EmptyState />;
+  const [tasks, setTasks] = useState<Task[]>([]);
 
-  console.log(data);
+  useEffect(() => {
+    if (data) {
+      setTasks(data as unknown as Task[]);
+    }
+  }, [data]);
 
-  const todayTasks = data?.filter((t) => isToday(t.dueDate));
-  const tomorrowTasks = data?.filter((t) => isTomorrow(t.dueDate));
-  const overdueTasks = data?.filter(
+  if (loading) {
+    return (
+      <SafeAreaView className="flex-1 justify-center items-center bg-background">
+        <ActivityIndicator size="large" color="#4F46E5" />
+        <Text className="text-textSecondary mt-4">Loading Tasks...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!tasks) {
+    return (
+      <SafeAreaView className="flex-1 justify-center items-center bg-background">
+        <Text className="text-textPrimary text-xl font-semibold">
+          Task Not Found
+        </Text>
+        <TouchableOpacity onPress={() => router.back()} className="mt-4 p-2">
+          <Text className="text-primary text-base">Go Back</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
+  const todayTasks = tasks?.filter((t) => isToday(t.dueDate));
+  const tomorrowTasks = tasks?.filter((t) => isTomorrow(t.dueDate));
+  const overdueTasks = tasks?.filter(
     (t) => isOverdue(t.dueDate) && !t.completed
   );
-  const upcomingTasks = data?.filter((t) => isUpcoming(t.dueDate));
-  const completedTasks = data?.filter((t) => t.completed);
+  const upcomingTasks = tasks?.filter((t) => isUpcoming(t.dueDate));
+  const completedTasks = tasks?.filter((t) => t.completed);
+
+  const handleNavigateToDetails = (taskId?: string) => {
+    if (!taskId) {
+      console.warn("navigate to task missing id", taskId);
+      return;
+    }
+
+    router.push(`/task/${taskId}`);
+  };
+
+  const handleToggleCompleted = async (task: Task) => {
+    if (!task) return;
+    setIsUpdating(true);
+    try {
+      const newCompletedState = !task.completed;
+
+      const success = await updateTask(task.$id, {
+        ...task,
+        completed: newCompletedState,
+      });
+
+      if (success) {
+        const res = await getUserTasks({ userId: user?.$id });
+        setTasks(res as unknown as Task[]);
+      } else {
+        Alert.alert("Error", "Failed to update task completion status.");
+      }
+    } catch (error) {
+      console.error("Update error:", error);
+      Alert.alert("Error", "An unexpected error occurred during update.");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const handleToggle = (taskId: string, isCompleted: boolean) => {
     // Call APi to update task
@@ -79,7 +146,7 @@ const TaskList: React.FC<TaskListScreenProps> = () => {
   const handleSelection = (filter: string) => {
     const arr =
       filter === "All"
-        ? data
+        ? tasks
         : filter === "Today"
           ? todayTasks
           : filter === "Upcoming"
@@ -137,7 +204,8 @@ const TaskList: React.FC<TaskListScreenProps> = () => {
                 <TaskListItem
                   key={task.$id}
                   task={task}
-                  onToggle={handleToggle}
+                  onToggle={handleToggleCompleted}
+                  onDetail={handleNavigateToDetails}
                 />
               ))}
 
