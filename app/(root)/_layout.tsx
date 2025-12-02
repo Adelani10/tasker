@@ -1,16 +1,15 @@
-import { getCurrentUser } from "@/lib/appwrite";
-import { useAppwrite } from "@/lib/useAppwrite";
+import { useGlobalStore } from "@/lib/store";
 import { Redirect, Slot } from "expo-router";
-import React from "react";
+import React, { useEffect } from "react";
 import { ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const AppLayout = () => {
-  const { data: user, loading } = useAppwrite({
-    fn: getCurrentUser,
-  });
+  const {refetchUser, isLogged, loading} = useGlobalStore()
 
-  const isLogged = !!user;
+  useEffect(() => {
+    refetchUser();
+  }, []);
 
   if (loading) {
     return (

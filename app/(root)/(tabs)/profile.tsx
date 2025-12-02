@@ -1,7 +1,9 @@
-import { getCurrentUser } from "@/lib/appwrite";
+import { getCurrentUser, logout } from "@/lib/appwrite";
 import { useAppwrite } from "@/lib/useAppwrite";
+import { FontAwesome } from "@expo/vector-icons";
+import { router } from "expo-router";
 import React from "react";
-import { ScrollView, Text, View } from "react-native";
+import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const Profile: React.FC = () => {
@@ -17,8 +19,20 @@ const Profile: React.FC = () => {
     return `${first}${second}`;
   };
 
+  const handleLogout = async () => {
+    const res = await logout();
+    if (res) {
+      router.replace("/sign-in");
+    } else {
+      Alert.alert("Error", "Failed to logout");
+    }
+  };
+
   return (
-    <SafeAreaView className={`flex-1 bg-background`}>
+    <SafeAreaView
+      className={`flex-1 bg-background`}
+      style={{ marginBottom: 70 }}
+    >
       <ScrollView>
         <View className="flex-1 px-6 pt-4">
           <View className="h-64 bg-gray-300 rounded-xl items-center gap-2 justify-center">
@@ -47,6 +61,16 @@ const Profile: React.FC = () => {
           </View>
         </View>
       </ScrollView>
+      <TouchableOpacity
+        className={`absolute h-16 left-6 bottom-3 rounded-full shadow-xl shadow-[#EF4444]/50`}
+        onPress={handleLogout}
+      >
+        <View className="flex-row items-center gap-2">
+          <FontAwesome name="sign-out" size={20} color="#EF4444" />
+
+          <Text className="font-semibold text-xl text-danger">Log out</Text>
+        </View>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };

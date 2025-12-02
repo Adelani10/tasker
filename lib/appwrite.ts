@@ -1,10 +1,27 @@
+import { CreateTaskData } from "@/types";
 import * as Linking from "expo-linking";
 import { openAuthSessionAsync } from "expo-web-browser";
-import { Account, Avatars, Client, OAuthProvider } from "react-native-appwrite";
+import {
+  Account,
+  Avatars,
+  Client,
+  Databases,
+  ID,
+  OAuthProvider,
+  Permission,
+  Query,
+  Role,
+  Storage,
+} from "react-native-appwrite";
+
 export const config = {
   platform: "com.delani.tasker",
   endpoint: process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT,
   projectId: process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID,
+  databaseId: process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID,
+  taskId: process.env.EXPO_PUBLIC_APPWRITE_TASK_TABLE_ID,
+  tagId: process.env.EXPO_PUBLIC_APPWRITE_TAG_TABLE_ID,
+  bucketId: process.env.EXPO_PUBLIC_APPWRITE_TASK_IMAGES_BUCKET_ID,
 };
 
 export const client = new Client();
@@ -15,6 +32,8 @@ client
 
 export const avatar = new Avatars(client);
 export const account = new Account(client);
+export const databases = new Databases(client);
+export const storage = new Storage(client);
 
 export const login = async () => {
   try {
@@ -45,7 +64,7 @@ export const login = async () => {
 
 export const logout = async () => {
   try {
-    await account.deleteSession("current");
+    const res = await account.deleteSession("current");
     return true;
   } catch (error) {
     console.error(error);
@@ -64,5 +83,119 @@ export const getCurrentUser = async () => {
   } catch (error) {
     console.log(error);
     return null;
+  }
+};
+
+export const getUserTasks = async ({
+  userId,
+}: {
+  userId: string | undefined;
+}) => {
+  if (!userId) return [];
+  try {
+    const res = await databases?.listDocuments(
+      config?.databaseId!,
+      config?.taskId!,
+      [Query.equal("userId", userId)]
+    );
+    return res?.documents;
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+export const getSingleTask = async ({
+  taskId,
+}: {
+  taskId: string | undefined;
+}) => {
+  if (!taskId) return [];
+  try {
+    const res = await databases?.getDocument(
+      config?.databaseId!,
+      config?.taskId!,
+      taskId
+    );
+    return res?.document;
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+export const uploadFile = async (
+  fileUri: string,
+  mimeType: string,
+  userId: string
+): Promise<string | null> => {
+  if (!config.bucketId) {
+    console.error("Appwrite bucket ID is not configured.");
+    return null;
+  }
+
+  try {
+    const response = await fetch(fileUri);
+    const blob = await response.blob();
+
+    const file = {
+      uri: fileUri,
+      name: fileUri.split("/").pop() || "image",
+      type: mimeType,
+      size: 10,
+    };
+
+    const uploadedFile = await storage.createFile(
+      config.bucketId,
+      ID.unique(),
+      file,
+      [Permission.delete(Role.user(userId))]
+    );
+
+    return uploadedFile.$id;
+  } catch (error) {
+    console.error("Error uploading file to Appwrite Storage:", error);
+    return null;
+  }
+};
+
+export const getFileUrl = (fileId: string): string => {
+  if (!config.bucketId) {
+    console.error("Appwrite bucket ID is not configured.");
+    return "";
+  }
+  return `${config.endpoint}/storage/buckets/${config.bucketId}/files/${fileId}/view?project=${config.projectId}`;
+};
+
+export const createTask = async (task: CreateTaskData) => {
+  try {
+    if (!task) return false;
+
+    const payload = {
+      ...task,
+      imageUri: task.imageUri ? getFileUrl(task.imageUri) : null,
+    };
+
+    const res = await databases?.createDocument(
+      config?.databaseId!,
+      config?.taskId!,
+      ID.unique(),
+      payload
+    );
+
+    return true;
+  } catch (error) {
+    console.error("Error creating task document:", error);
+    return false;
+  }
+};
+
+export const getTags = async () => {
+  try {
+    const res = await databases?.listDocuments(
+      config?.databaseId!,
+      config?.tagId!
+    );
+    return res?.documents;
+  } catch (error) {
+    console.error(error);
   }
 };

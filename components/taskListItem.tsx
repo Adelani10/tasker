@@ -10,11 +10,14 @@ const TaskListItem: React.FC<TaskListItemProps> = ({ task, onToggle }) => {
 
   return (
     <TouchableOpacity
-      className={`flex-row bg-white p-4 rounded-xl mb-3 items-center justify-between shadow-sm shadow-gray-200`}
+      className={`flex-row bg-white p-4 rounded-xl flex-shrink mb-3 items-center justify-between shadow-sm shadow-gray-200`}
       activeOpacity={0.8}
     >
       <View className="flex-row items-center flex-1 mr-4">
-        <TouchableOpacity onPress={() => onToggle(task?.id)} className="mr-4">
+        <TouchableOpacity
+          onPress={() => onToggle(task?.$id, !task.completed)}
+          className="mr-4"
+        >
           {task.completed ? (
             <Icon name="check-circle" size="text-3xl text-secondary" />
           ) : (
@@ -26,12 +29,12 @@ const TaskListItem: React.FC<TaskListItemProps> = ({ task, onToggle }) => {
           className={`text-base flex-shrink ${task.completed ? `line-through text-textSecondary` : `text-textPrimary`}`}
           numberOfLines={1}
         >
-          {task.text}
+          {task.title}
         </Text>
       </View>
 
       <TouchableOpacity
-        onPress={() => router.push(`/task/${task.id}`)}
+        onPress={() => router.push(`/task/${task.$id}`)}
         className="p-1"
       >
         <Ionicons name="menu" size={20} color={"#10B981"} />

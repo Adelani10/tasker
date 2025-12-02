@@ -9,7 +9,7 @@ interface Target {
   identifier: string;
   name: string;
   providerId: string | null;
-  providerType: 'email' | 'phone' | 'oauth';
+  providerType: "email" | "phone" | "oauth";
   userId: string;
 }
 
@@ -27,7 +27,7 @@ export interface User {
   passwordUpdate: string;
   phone: string;
   phoneVerification: boolean;
-  prefs: Record<string, any>; 
+  prefs: Record<string, any>;
   registration: string;
   status: boolean;
   targets: Target[];
@@ -54,6 +54,7 @@ export const useGlobalStore = create<GlobalState>((set, get) => ({
     set({ loading: true });
     try {
       const currentUser = await getCurrentUser();
+
       set({
         user: currentUser as User,
         isLogged: !!currentUser,

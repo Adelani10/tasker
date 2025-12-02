@@ -1,11 +1,15 @@
 import { DatePickerModal } from "@/components/datePicker";
 import { TimePickerModal } from "@/components/timePicker";
-import { CreateTaskScreenProps, TaskTag } from "@/types";
+import { createTask, getTags, uploadFile } from "@/lib/appwrite";
+import { useGlobalStore } from "@/lib/store";
+import { useAppwrite } from "@/lib/useAppwrite";
+import { CreateTaskData } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   ScrollView,
@@ -16,32 +20,37 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const CreateTaskScreen: React.FC<CreateTaskScreenProps> = ({ onSaveTask }) => {
+const CreateTaskScreen: React.FC = () => {
   const [taskTitle, setTaskTitle] = useState<string>("");
   const [taskNotes, setTaskNotes] = useState<string>("");
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [dueTime, setDueTime] = useState<Date | undefined>(undefined);
-  const [selectedTags, setSelectedTags] = useState<TaskTag[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  // Image related
   const [taskImageUri, setTaskImageUri] = useState<string | undefined>(
     undefined
   );
+  const [taskImageMimeType, setTaskImageMimeType] = useState<
+    string | undefined
+  >(undefined);
+
   const router = useRouter();
 
-  const availableTags: TaskTag[] = [
-    "Personal",
-    "Work",
-    "Groceries",
-    "Health",
-    "Study",
-    "Other",
-  ];
-
+  // Modal State
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const [isTimePickerVisible, setTimePickerVisible] = useState(false);
 
-  const toggleTag = (tag: TaskTag) => {
+  const { user } = useGlobalStore();
+
+  const { data: tags } = useAppwrite({
+    fn: getTags,
+  });
+
+  const toggleTag = (tagId: string) => {
     setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+      prev.includes(tagId) ? prev.filter((t) => t !== tagId) : [...prev, tagId]
     );
   };
 
@@ -72,11 +81,13 @@ const CreateTaskScreen: React.FC<CreateTaskScreenProps> = ({ onSaveTask }) => {
         pickerResult.assets &&
         pickerResult.assets.length > 0
       ) {
-        setTaskImageUri(pickerResult.assets[0].uri);
+        const asset = pickerResult.assets[0];
+        const mimeType = asset.mimeType || "image/jpeg";
+        setTaskImageUri(asset.uri);
+        setTaskImageMimeType(mimeType);
       }
     } catch (error) {
       console.error("Error picking image:", error);
-      // Fallback for unexpected errors during camera use
       Alert.alert(
         "Camera Error",
         "An error occurred while trying to capture the image. Please try again."
@@ -112,33 +123,85 @@ const CreateTaskScreen: React.FC<CreateTaskScreenProps> = ({ onSaveTask }) => {
     });
   };
 
-  const handleCreateTask = () => {
+  const handleDueDateFormat = () => {
+    let mainDueDate: Date | undefined = undefined;
+
+    if (dueDate) {
+      mainDueDate = new Date(dueDate);
+
+      if (dueTime) {
+        mainDueDate.setHours(dueTime.getHours());
+        mainDueDate.setMinutes(dueTime.getMinutes());
+        mainDueDate.setSeconds(0);
+        mainDueDate.setMilliseconds(0);
+      } else {
+        mainDueDate.setHours(23, 59, 59, 999);
+      }
+    }
+
+    const dueDateForAppwrite = mainDueDate
+      ? mainDueDate.toISOString()
+      : undefined;
+
+    return dueDateForAppwrite;
+  };
+
+  const handleCreateTask = async () => {
     if (!taskTitle.trim()) {
       Alert.alert("Missing Title", "Please enter a title for your task.");
       return;
     }
-
-    let finalDueDate: Date | undefined = dueDate;
-    if (finalDueDate && dueTime) {
-      finalDueDate.setHours(dueTime.getHours(), dueTime.getMinutes(), 0, 0);
-    } else if (finalDueDate) {
-      // If only date is set, set time to EOD (23:59)
-      finalDueDate.setHours(23, 59, 0, 0);
+    if (!user?.$id) {
+      Alert.alert("Error", "User not found");
+      return;
     }
 
-    onSaveTask({
-      text: taskTitle.trim(),
-      notes: taskNotes.trim() || undefined,
-      dueDate: finalDueDate,
-      tags: selectedTags.length > 0 ? selectedTags : undefined,
-      imageUri: taskImageUri,
-    });
-    router.back();
+    setIsSaving(true);
+    let appwriteFileId: string | null = null;
+
+    try {
+      if (taskImageUri && user?.$id && taskImageMimeType) {
+        appwriteFileId = await uploadFile(
+          taskImageUri,
+          taskImageMimeType,
+          user.$id
+        );
+
+        if (!appwriteFileId) {
+          Alert.alert(
+            "Upload Error",
+            "Failed to upload image. Task not saved."
+          );
+          setIsSaving(false);
+          return;
+        }
+      }
+
+      const date = handleDueDateFormat();
+
+      const payload: CreateTaskData = {
+        title: taskTitle.trim(),
+        note: taskNotes.trim() || "",
+        dueDate: date || "",
+        completed: false,
+        imageUri: appwriteFileId,
+        userId: user?.$id,
+        tagId: selectedTags.length > 0 ? selectedTags : [],
+      };
+
+      await createTask(payload);
+
+      router.back();
+    } catch (error) {
+      console.error("Task creation failed:", error);
+      Alert.alert("Error", "Could not create task. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
     <SafeAreaView className={`flex-1 bg-background`}>
-      {/* <StatusBar barStyle="dark-content" className="bg-background" /> */}
       <View className="flex-1 px-6 pt-4">
         <View className="flex-row justify-between items-center py-4 mb-8">
           <TouchableOpacity onPress={() => router.back()} className="p-1">
@@ -198,16 +261,16 @@ const CreateTaskScreen: React.FC<CreateTaskScreenProps> = ({ onSaveTask }) => {
             Tags
           </Text>
           <View className="flex-row flex-wrap mb-6">
-            {availableTags.map((tag) => (
+            {tags?.map((tag) => (
               <TouchableOpacity
-                key={tag}
-                className={`px-4 py-2 rounded-full mr-2 mb-2 ${selectedTags.includes(tag) ? `bg-primary` : "bg-gray-200"}`}
-                onPress={() => toggleTag(tag)}
+                key={tag?.$id}
+                className={`px-4 py-2 rounded-full mr-2 mb-2 ${selectedTags.includes(tag?.$id) ? `bg-primary` : "bg-gray-200"}`}
+                onPress={() => toggleTag(tag?.$id)}
               >
                 <Text
-                  className={`text-sm font-semibold ${selectedTags.includes(tag) ? "text-white" : `text-textPrimary`}`}
+                  className={`text-sm font-semibold ${selectedTags.includes(tag?.$id) ? "text-white" : `text-textPrimary`}`}
                 >
-                  {tag}
+                  {tag?.tagName}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -239,9 +302,15 @@ const CreateTaskScreen: React.FC<CreateTaskScreenProps> = ({ onSaveTask }) => {
         <TouchableOpacity
           className={`bg-primary p-4 rounded-xl items-center justify-center mt-4 mb-4 shadow-lg shadow-[#4F46E5]/40 ${!taskTitle.trim() ? "opacity-50" : ""}`}
           onPress={handleCreateTask}
-          disabled={!taskTitle.trim()}
+          disabled={!taskTitle.trim() || isSaving}
         >
-          <Text className={`text-lg font-bold text-surface`}>Create Task</Text>
+          {isSaving ? (
+            <ActivityIndicator className="text-surface" size={"small"} />
+          ) : (
+            <Text className={`text-lg font-bold text-surface`}>
+              Create Task
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
 

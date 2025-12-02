@@ -1,14 +1,30 @@
 export interface Task {
-  id: string;
-  text: string;
+  $collectionId: string;
+  $createdAt: string;
+  $databaseId: string;
+  $id: string;
+  $permissions: string[];
+  $sequence: number;
+  $updatedAt: string;
   completed: boolean;
-  isToday: boolean;
-  notes?: string;
-  dueDate?: Date;
+  dueDate: string;
+  imageUri: string | null;
+  note: string;
+  title: string;
+  userId: string;
   tags?: TaskTag[];
-  imageUri?: string;
+  tagId: string[];
 }
 
+export interface CreateTaskData {
+  title: string;
+  note?: string;
+  dueDate?: string;
+  completed: boolean;
+  imageUri?: string | null;
+  userId: string;
+  tagId?: string[];
+}
 
 export interface WelcomeScreenProps {
   onNavigateToTasks: () => void;
@@ -21,12 +37,23 @@ export interface TaskListScreenProps {
 }
 
 export interface TaskListItemProps {
-  task: Task;
-  onToggle: (taskId: string) => void;
+  task: any;
+  onToggle: (taskId: string, isCompleted: boolean) => void;
 }
 
-export type TaskTag = 'Personal' | 'Work' | 'Groceries' | 'Health' | 'Study' | 'Other';
+export type TaskTag = {
+  $collectionId: string;
+  $createdAt: string;
+  $databaseId: string;
+  $id: string;
+  $permissions: string[];
+  $sequence: number;
+  $updatedAt: string;
+  description: string;
+  tagName: string;
+};
 
-export interface CreateTaskScreenProps {
-  onSaveTask: (task: Omit<Task, 'id' | 'completed' | 'isToday'>) => void;
+export interface EmptyStateProps {
+  message?: string;
+  imageSource?: any;
 }
